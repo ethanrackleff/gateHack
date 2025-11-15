@@ -1,153 +1,172 @@
-/**
- * @typedef {import('../models/books.js').Book} Book
- * @typedef {import('../models/books.js').Chapter} Chapter
- */
+  /**
+   * @typedef {import('../models/books.js').Book} Book
+   * @typedef {import('../models/books.js').Chapter} Chapter
+   */
 
-export interface LayoutConfig {
+  /**
+   * Layout configuration (font, margins, screen size)
+   */
+  export interface LayoutConfig {
     screenHeight: number;
     screenWidth: number;
-    fontSize: number;          // Current font size
-    lineHeight: number;        // Line height multiplier (e.g., 1.5)
-    marginTop: number;         // Top margin
-    marginBottom: number;      // Bottom margin
+    fontSize: number;
+    lineHeight: number;
+    marginTop: number;
+    marginBottom: number;
     paragraphSpacing: number;
-}
+    contentHeight?: number;
+  }
 
-export interface Page {
-    pageNumber: number;        // 1-indexed page number
-    scrollOffset: number;      // Y-offset in the continuous layout
-    chapterId: string;         // Current chapter at this offset
-    chapterTitle: string;      // Chapter title for display
-    startParagraphIdx: number;  // First paragraph on this page
-    endParagraphIdx: number;    // Last paragraph on this page (inclusive)
-}
-
-
-export interface BookLayout {
-    pages: Page[];
-    totalHeight: number;       // Total rendered height of book
-    contentHeight: number;     // Height available per page
-}
-
-export interface ParagraphWithMeta {
-    text: string;
+  /**
+   * Page is a character range in continuous text
+   */
+  export interface Page {
+    pageNumber: number;
+    startCharIndex: number;
+    endCharIndex: number;
     chapterId: string;
     chapterTitle: string;
-    type: 'paragraph' | 'chapter-heading';
-}
+  }
 
-export function flattenBookContent(book: any): ParagraphWithMeta[] {
-    const content: ParagraphWithMeta[] = [];
+  /**
+   * Complete book layout after rendering
+   */
+  export interface BookLayout {
+    pages: Page[];
+    fullText: string;
+    totalHeight: number;
+    contentHeight: number;
+  }
+
+  /**
+   * Flatten book into continuous text with chapter markers
+   */
+  export function createContinuousText(book: any): {
+    text: string;
+    chapterPositions: Array<{ startIdx: number; chapterId: string; title: string }>
+  } {
+    let text = '';
+    const chapterPositions: Array<{ startIdx: number; chapterId: string; title: string }> = [];
 
     book.chapters.forEach((chapter: any) => {
-        content.push({
-            text: chapter.title,
-            chapterId: chapter.id,
-            chapterTitle: chapter.title,
-            type: 'chapter-heading',
-        });
+      // Mark chapter start position
+      chapterPositions.push({
+        startIdx: text.length,
+        chapterId: chapter.id,
+        title: chapter.title,
+      });
 
-        // Add all paragraphs
-        chapter.paragraphs.forEach((paragraph: string) => {
-            content.push({
-                text: paragraph,
-                chapterId: chapter.id,
-                chapterTitle: chapter.title,
-                type: 'paragraph',
-            });
-        });
+      // Add chapter title as text
+      text += `\n\n${chapter.title}\n\n`;
+
+      // Add all paragraphs with spacing
+      chapter.paragraphs.forEach((para: string) => {
+        text += para + '\n\t';
+      });
     });
-    return content;
-}
 
-//TODO: REFACTOR AFTER ADDING IMAGE LOGIC, DOESN'T SPLIT WITH IMAGE CONSIDERATIONS ATM
-export async function generateBookLayout(
+    return { text, chapterPositions };
+  }
+
+  /**
+   * Find which chapter a character position belongs to
+   */
+  function findChapterAtPosition(
+    charIndex: number,
+    chapterPositions: Array<{ startIdx: number; chapterId: string; title: string }>
+  ) {
+    for (let i = chapterPositions.length - 1; i >= 0; i--) {
+      if (charIndex >= chapterPositions[i].startIdx) {
+        return chapterPositions[i];
+      }
+    }
+    return chapterPositions[0];
+  }
+
+  /**
+   * Calculate how many characters fit on one page
+   */
+  function estimateCharsPerPage(config: LayoutConfig): number {
+    const charsPerLine = Math.floor(config.screenWidth / (config.fontSize * 0.6));
+    const linesPerPage = Math.floor((config.contentHeight || 0) / (config.fontSize *
+  config.lineHeight));
+    return charsPerLine * linesPerPage;
+  }
+
+  /**
+   * Generate page layout with continuous text flow
+   */
+  export async function generateBookLayout(
     book: any,
     config: LayoutConfig,
-    measureContent: (content: ParagraphWithMeta[]) => Promise<number>
-): Promise<BookLayout> {
+    measureContent?: (text: string) => Promise<number>
+  ): Promise<BookLayout> {
 
-    const content = flattenBookContent(book);
+    // Step 1: Create continuous text
+    const { text: fullText, chapterPositions } = createContinuousText(book);
 
-    const totalHeight = await measureContent(content);
-
+    // Step 2: Calculate content height
     const contentHeight = config.screenHeight - config.marginTop - config.marginBottom;
 
+    // Step 3: Estimate characters per page
+    const charsPerPage = estimateCharsPerPage({
+      ...config,
+      contentHeight,
+    });
+
+    // Step 4: Generate pages by slicing text
     const pages: Page[] = [];
     let pageNumber = 1;
-    let currentOffset = 0;
+    let currentCharIdx = 0;
 
-    while (currentOffset < totalHeight) {
-        const currentChapter = findChapterAtOffset(content, currentOffset, config);
+    while (currentCharIdx < fullText.length) {
+      const endCharIdx = Math.min(currentCharIdx + charsPerPage, fullText.length);
+      const chapter = findChapterAtPosition(currentCharIdx, chapterPositions);
 
-        pages.push({
-            pageNumber,
-            scrollOffset: currentOffset,
-            chapterId: currentChapter.id,
-            chapterTitle: currentChapter.title,
-        });
+      pages.push({
+        pageNumber,
+        startCharIndex: currentCharIdx,
+        endCharIndex: endCharIdx,
+        chapterId: chapter.chapterId,
+        chapterTitle: chapter.title,
+      });
 
-        currentOffset += contentHeight;
-        pageNumber++;
+      currentCharIdx = endCharIdx;
+      pageNumber++;
     }
 
+    // Estimate total height
+    const totalHeight = pages.length * contentHeight;
+
     return {
-        pages,
-        totalHeight,
-        contentHeight,
+      pages,
+      fullText,
+      totalHeight,
+      contentHeight,
     };
-}
+  }
 
-function findChapterAtOffset(
-    content: ParagraphWithMeta[],
-    offset: number,
-    config: LayoutConfig
-): { id: string; title: string } {
-    const estimatedIndex = Math.floor(
-        (offset / (content.length * config.fontSize * config.lineHeight)) * content.length
-    );
+  /**
+   * Get text content for a specific page
+   */
+  export function getPageText(layout: BookLayout, pageNumber: number): string {
+    const page = layout.pages.find(p => p.pageNumber === pageNumber);
+    if (!page) return '';
 
-    const item = content[Math.min(estimatedIndex, content.length - 1)];
-    return {
-        id: item.chapterId,
-        title: item.chapterTitle,
-    };
-}
+    return layout.fullText.slice(page.startCharIndex, page.endCharIndex);
+  }
 
-
-/**
- * Get which page the user is currently viewing based on scroll position
- * 
- * Example: User scrolls to Y-offset 1600px
- * - Page 1 starts at 0px
- * - Page 2 starts at 800px  
- * - Page 3 starts at 1600px ← User is here
- * - Page 4 starts at 2400px
- * 
- * This returns Page 3
- */
-export function getPageAtOffset(layout: BookLayout, scrollOffset: number): Page | null {
-    // Start from the end and work backwards
-    // Find the page whose offset is closest to (but not exceeding) scrollOffset
-    for (let i = layout.pages.length - 1; i >= 0; i--) {
-        if (layout.pages[i].scrollOffset <= scrollOffset) {
-            return layout.pages[i];
-        }
-    }
-
-    // Fallback: return first page
-    return layout.pages[0] || null;
-}
-
-/**
- * Get page info by page number
- * 
- * Example: User wants to jump to page 50
- * This returns: { pageNumber: 50, scrollOffset: 39200, chapterId: "chapter-3", ... }
- * Then we can scroll to offset 39200px
- */
-export function getPageByNumber(layout: BookLayout, pageNumber: number): Page | null {
+  /**
+   * Get page by number
+   */
+  export function getPageByNumber(layout: BookLayout, pageNumber: number): Page | null {
     return layout.pages.find(p => p.pageNumber === pageNumber) || null;
-}
+  }
 
-
+  /**
+   * Get page at scroll offset
+   */
+  export function getPageAtOffset(layout: BookLayout, scrollOffset: number): Page | null {
+    const pageIndex = Math.floor(scrollOffset / layout.contentHeight);
+    return layout.pages[pageIndex] || null;
+  }
