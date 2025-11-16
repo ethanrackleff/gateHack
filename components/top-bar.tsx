@@ -3,24 +3,15 @@ import AppText from "./app-text";
 import { useEffect, useState } from "react";
 
 export type TopBarProps = {
-  currentLocation: any,
+  locationIndex: number,
   totalLocations: number,
 }
 
 export default function TopBar({
-  currentLocation,
+  locationIndex,
   totalLocations
 }: TopBarProps) {
     
-  const [locationIndex, setLocationIndex] = useState<number | null>(null);
-
-  useEffect(() => {
-    const loc = currentLocation?.start?.location;
-    if (typeof loc === "number") {
-
-      setLocationIndex(loc);
-    }
-  }, [currentLocation]);
 
   // clamp progress between 0 and 1
   

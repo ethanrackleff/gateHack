@@ -5,16 +5,16 @@ import { useEffect, useState } from "react";
 
 export type OptionsMenuProps = {
   goBack: any,
-  currentLocation: any,
-  setCurrentLocation: any,
+  locationIndex: number
+  setLocationIndex: any,
   goToLocation: any,
   totalLocations: number
 }
 
 export default function OptionsMenu({
   goBack,
-  currentLocation,
-  setCurrentLocation,
+  locationIndex,
+  setLocationIndex,
   goToLocation,
   totalLocations
 }: OptionsMenuProps) {
@@ -55,20 +55,10 @@ export default function OptionsMenu({
     }
   });
 
-  const [locationIndex, setLocationIndex] = useState<number | null>(null);
-
-  useEffect(() => {
-    const loc = currentLocation?.start?.location;
-    if (typeof loc === "number") {
-
-      setLocationIndex(loc);
-    }
-  }, [currentLocation]);
 
   function handleValueChange(x: number) {
-    setCurrentLocation(x)
+    setLocationIndex(x)
     goToLocation(x)
-    console.log(totalLocations)
   }
 
   return (
