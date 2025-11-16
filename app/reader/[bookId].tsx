@@ -2,7 +2,6 @@ import ControlOverlay from '@/components/control-overlay';
 import Footer from '@/components/footer';
 import GenericPopup from '@/components/generic-popup';
 import OptionsMenu from '@/components/options-menu';
-import ReadingArea from '@/components/reading-area';
 import SummaryLoading from '@/components/summary-loading';
 import Summary from '@/components/summary';
 import TopBar from '@/components/top-bar';
@@ -21,6 +20,8 @@ import {
 import { getReadingState, saveReadingState } from '@/src/services/storage';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { ReaderProvider } from "@epubjs-react-native/core";
+import EpubReaderScreen from "@/components/EpubReaderScreen";
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
   const { width, height } = Dimensions.get('window');
 
@@ -225,7 +226,9 @@ import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 
         <TopBar pageNumber={currentPageNum} totalPages={bookLayout.pages.length}/>
 
-        <ReadingArea pageText={pageText} fontSize={fontSize} lineHeight={lineHeight}/>
+        <View style={styles.epubContainer}>
+          <EpubReaderScreen />
+        </View>
 
         <Footer/>
 
@@ -239,5 +242,9 @@ import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
     container: {
       flex: 1,
       backgroundColor: '#fff',
+    },
+    epubContainer: {
+      flex: 1,
+      backgroundColor: '#fdd',
     },
   });
