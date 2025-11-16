@@ -1,3 +1,4 @@
+import AppText from "@/components/app-text";
 import ControlOverlay from "@/components/control-overlay";
 import Footer from "@/components/footer";
 import GenericPopup from "@/components/generic-popup";
@@ -7,25 +8,14 @@ import SummaryLoading from "@/components/summary-loading";
 import TopBar from "@/components/top-bar";
 import { getBookById } from "@/src/data/booksIndex";
 import {
-  calculateMaxSummaryLength,
-  getSummary,
+  getSummary
 } from "@/src/services/aiSummaries";
-import {
-  generateBookLayout,
-  getPageByNumber,
-  getPageText,
-  type BookLayout,
-  type LayoutConfig,
-} from "@/src/services/pagination";
 import { getReadingState, saveReadingState } from "@/src/services/storage";
-import { Reader, useReader } from "@epubjs-react-native/core";
+import { Location, Reader, useReader } from "@epubjs-react-native/core";
 import { useFileSystem } from "@epubjs-react-native/expo-file-system";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { ReaderProvider } from "@epubjs-react-native/core";
-import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
-import AppText from "@/components/app-text";
-import { Location } from "@epubjs-react-native/core";
+import { Dimensions, StyleSheet, Text, View } from "react-native";
 const { width, height } = Dimensions.get("window");
 
 export default function ReaderScreen() {
@@ -221,7 +211,7 @@ export default function ReaderScreen() {
         />
       </View>
 
-      <Footer />
+      <Footer locationIndex={locationIndex}/>
 
       <ControlOverlay
         activateMenu={() => setIsMenuVisible(true)}
