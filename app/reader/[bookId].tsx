@@ -25,6 +25,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ReaderProvider } from "@epubjs-react-native/core";
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import AppText from '@/components/app-text';
   const { width, height } = Dimensions.get('window');
 
   export default function ReaderScreen() {
@@ -39,13 +40,16 @@ import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
     const [isMenuVisible, setIsMenuVisible] = useState(false);
     const [isSummaryVisible, setIsSummaryVisible] = useState(true);
 
-    const [stateLocation, setStateLocation] = useState<Location>();
+    const [stateLocation, setStateLocation] = useState<any | null>(null);
+    // may not be necessary
+    // const [locationTotal, setLocationTotal] = useState<number | null>(null);
+    const [isReady, setIsReady] = useState<boolean>(false);
 
     const [currentSummary, setCurrentSummary] = useState<string>('');
     const [isLoadingSummary, setIsLoadingSummary] = useState(false);
 
 
-    const { goPrevious, goNext, flow, currentLocation, goToLocation } = useReader();
+    const { goPrevious, goNext, flow, currentLocation, goToLocation, totalLocations } = useReader();
 
     useEffect(() => {
       if (currentLocation) {
@@ -193,16 +197,6 @@ import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
     const currentPage = getPageByNumber(bookLayout, currentPageNum);
     const pageText = getPageText(bookLayout, currentPageNum);
 
-
-    function goPrevPage() {
-      setCurrentPageNum(Math.max(1, currentPageNum - 1))
-    }
-
-    function goNextPage() {
-      if (!bookLayout) return
-      setCurrentPageNum(Math.min(bookLayout.pages.length, currentPageNum + 1))
-    }
-
     function goBack() {
       router.back()
     }
@@ -216,7 +210,13 @@ import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
     }
 
     function handleLocationChange(loc: any) {
-      setStateLocation(loc)
+      if (loc) {
+        setStateLocation(loc)
+      }
+      console.log(stateLocation)
+      if (!isReady) {
+        setIsReady(true)
+      }
     }
    
 
@@ -240,10 +240,15 @@ import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
           visible={isMenuVisible} 
           onRequestClose={() => {setIsMenuVisible(false)}}
         >
-          <OptionsMenu goBack={goBack} currentPageNum={currentPageNum} setCurrentPageNum={setCurrentPageNum} totalPages={bookLayout.pages.length}/>
+          <OptionsMenu goBack={goBack} currentLocation={stateLocation} setCurrentLocation={setStateLocation} goToLocation={goToLocation} totalLocations={totalLocations}/>
         </GenericPopup>
 
-        <TopBar pageNumber={currentPageNum} totalPages={bookLayout.pages.length}/>
+        { (isReady) ? (
+          <TopBar currentLocation={stateLocation} totalLocations={totalLocations}/>
+        ) : (
+          <AppText>Loading...</AppText>
+        )
+        }
 
         <View style={styles.epubContainer}>
           <Reader
@@ -267,7 +272,6 @@ import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
         <Footer/>
 
         <ControlOverlay activateMenu={() => setIsMenuVisible(true)} goPrevious={goPrevious} goNext={goNext} flow={flow}/>
-
       </View>
     );
   }

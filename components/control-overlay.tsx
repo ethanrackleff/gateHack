@@ -47,11 +47,7 @@ export default function ControlOverlay({
     <View style={styles.mainContainer} pointerEvents="box-none">
       <Pressable style={styles.topArea} onPress={activateMenu}></Pressable>
       <View style={styles.midArea}>
-        <Pressable style={styles.leftArea} onPress={() => {
-          console.log("pressed")
-          console.log("flow mode:", flow)
-          goPrevious();
-        }}></Pressable>
+        <Pressable style={styles.leftArea} onPress={goPrevious}></Pressable>
         <Pressable style={styles.rightArea} onPress={goNext}></Pressable>
       </View>
     </View>

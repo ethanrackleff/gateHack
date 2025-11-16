@@ -1,20 +1,22 @@
 import { Pressable, StyleSheet, Text, View } from "react-native"
 import Slider from '@react-native-community/slider';
 import AppText from "./app-text";
-import CustomSlider from "./custom-slider";
+import { useEffect, useState } from "react";
 
 export type OptionsMenuProps = {
   goBack: any,
-  currentPageNum: number,
-  setCurrentPageNum: any,
-  totalPages: number,
+  currentLocation: any,
+  setCurrentLocation: any,
+  goToLocation: any,
+  totalLocations: number
 }
 
 export default function OptionsMenu({
   goBack,
-  currentPageNum,
-  setCurrentPageNum,
-  totalPages
+  currentLocation,
+  setCurrentLocation,
+  goToLocation,
+  totalLocations
 }: OptionsMenuProps) {
 
   const styles = StyleSheet.create({
@@ -53,23 +55,39 @@ export default function OptionsMenu({
     }
   });
 
+  const [locationIndex, setLocationIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const loc = currentLocation?.start?.location;
+    if (typeof loc === "number") {
+
+      setLocationIndex(loc);
+    }
+  }, [currentLocation]);
+
+  function handleValueChange(x: number) {
+    setCurrentLocation(x)
+    goToLocation(x)
+    console.log(totalLocations)
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.topChunk}>
         <Pressable style={styles.backButton} onPress={goBack}>
           <AppText style={styles.backButtonText}>{'<-'}</AppText>
         </Pressable>
-        <AppText style={styles.pageNumberingText}>{`Page ${currentPageNum} of ${totalPages}`}</AppText>
+        <AppText style={styles.pageNumberingText}>{`Location ${locationIndex} of ${totalLocations}`}</AppText>
       </View>
       <View style={styles.middleChunk}>
         <View style={styles.sliderContainer}>
           <Slider
             style={{ width: 300, height: 40 }}
-            minimumValue={1}
-            maximumValue={totalPages}
+            minimumValue={0}
+            maximumValue={totalLocations}
             step={1}
-            value={currentPageNum}
-            onValueChange={setCurrentPageNum}
+            value={locationIndex ? locationIndex : 0}
+            onValueChange={handleValueChange}
             minimumTrackTintColor="#4a90e2"
             maximumTrackTintColor="#ddd"
             thumbTintColor="#4a90e2"
