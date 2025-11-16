@@ -1,19 +1,31 @@
 import { Text, StyleSheet, View } from "react-native"
 import AppText from "./app-text";
+import { useEffect, useState } from "react";
 
 export type TopBarProps = {
-  pageNumber: number,
-  totalPages: number
+  currentLocation: any,
+  totalLocations: number,
 }
 
 export default function TopBar({
-  pageNumber,
-  totalPages
+  currentLocation,
+  totalLocations
 }: TopBarProps) {
+    
+  const [locationIndex, setLocationIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const loc = currentLocation?.start?.location;
+    if (typeof loc === "number") {
+
+      setLocationIndex(loc);
+    }
+  }, [currentLocation]);
 
   // clamp progress between 0 and 1
-  const progress = (pageNumber-1)/(totalPages-1);
-  const clamped = Math.min(Math.max(progress, 0), 1);
+  
+  const progressPercent = locationIndex ? (locationIndex)/(totalLocations) : 0;
+  const clamped = Math.min(Math.max(progressPercent, 0), 1);
 
   const styles = StyleSheet.create({
     container: {
@@ -53,7 +65,7 @@ export default function TopBar({
         <View style={[styles.fill, { width: `${clamped * 100}%` }]}>
         </View>
       </View>
-      <AppText style={styles.barText}>{`${pageNumber}/${totalPages}`}</AppText>
+      <AppText style={styles.barText}>{`${locationIndex}/${totalLocations}`}</AppText>
     </View>
   );
 

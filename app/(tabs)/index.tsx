@@ -1,12 +1,14 @@
 import { getAllBooks } from '@/src/data/booksIndex';
 import { router } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useFonts } from 'expo-font';
+import * as Font from 'expo-font';
 import AppText from '@/components/app-text';
+
+
 
 export default function HomeScreen() {
 
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded] = Font.useFonts({
     'Jersey20-Regular': require('../../assets/fonts/Jersey20-Regular.ttf'),
   })
 
