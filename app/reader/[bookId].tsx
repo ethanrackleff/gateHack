@@ -1,15 +1,19 @@
  import { getBookById } from '@/src/data/booksIndex';
 import {
-    generateBookLayout,
-    getPageByNumber,
-    getPageText,
-    type BookLayout,
-    type LayoutConfig
+  calculateMaxSummaryLength,
+  generateSummaryForCurrentPosition
+} from '@/src/services/aiSummaries';
+import {
+  generateBookLayout,
+  getPageByNumber,
+  getPageText,
+  type BookLayout,
+  type LayoutConfig
 } from '@/src/services/pagination';
+import { getReadingState, saveReadingState } from '@/src/services/storage';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
-
   const { width, height } = Dimensions.get('window');
 
   export default function ReaderScreen() {
@@ -21,6 +25,9 @@ import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
     const [fontSize, setFontSize] = useState(16);
     const [lineHeight] = useState(1.5);
     const [isLoading, setIsLoading] = useState(true);
+
+    const [currentSummary, setCurrentSummary] = useState<string>('');
+    const [isLoadingSummary, setIsLoadingSummary] = useState(false);
 
     // Generate layout when book loads or settings change
     useEffect(() => {
@@ -42,10 +49,96 @@ import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
         const layout = await generateBookLayout(book, config);
         setBookLayout(layout);
         setIsLoading(false);
-      };
+
+        };
 
       generateLayout();
+
     }, [book, fontSize]);
+
+    // Generate summary when book layout is ready
+  useEffect(() => {
+    if (!bookLayout || !book || isLoading)  {
+      console.log('Returning early');
+      return;
+    }
+
+    const generateSummary = async () => {
+      setIsLoadingSummary(true);
+
+      const currentPage = getPageByNumber(bookLayout, currentPageNum);
+      if (!currentPage) {
+        setIsLoadingSummary(false);
+        return;
+      }
+
+      // Calculate max summary length based on screen size
+      const maxLength = calculateMaxSummaryLength(
+        width - 40,  // screenWidth minus padding
+        height - 140, // screenHeight minus header/footer
+        fontSize,
+        lineHeight
+      );
+
+      const summary = await generateSummaryForCurrentPosition(
+        book,
+        bookLayout,
+        currentPage,
+        maxLength
+      );
+
+      console.log('=== SUMMARY GENERATED ===');
+      console.log('Current Page:', currentPageNum);
+      console.log('Summary:', summary);
+      console.log('Summary Length:', summary.length);
+      console.log('========================');
+
+      setCurrentSummary(summary);
+      setIsLoadingSummary(false);
+
+      setCurrentSummary(summary);
+      setIsLoadingSummary(false);
+    };
+
+    generateSummary();
+  }, [bookLayout]); // Regenerate when page changes
+
+ // Restore last reading position when book loads
+  useEffect(() => {
+    if (!book) return;
+
+    const restorePosition = async () => {
+      const savedState = await getReadingState(bookId);
+
+      if (savedState) {
+        console.log('Restoring reading position:',
+  savedState.currentPage);
+        setCurrentPageNum(savedState.currentPage);
+      } else {
+        console.log('No saved position, starting from page 1');
+      }
+    };
+
+    restorePosition();
+  }, [bookId]);
+
+   // Save reading position whenever page changes
+  useEffect(() => {
+    if (!bookLayout || !book) return;
+
+    const savePosition = async () => {
+      await saveReadingState(bookId, {
+        bookId,
+        currentPage: currentPageNum,
+        totalPages: bookLayout.pages.length,
+        lastRead: Date.now(),
+      });
+      console.log('Saved reading position: page',
+  currentPageNum);
+    };
+
+    savePosition();
+  }, [currentPageNum, bookLayout, bookId]);
 
     if (!book) {
       return (

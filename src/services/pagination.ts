@@ -38,9 +38,219 @@
     contentHeight: number;
   }
 
+  function padToNextPageBoundary(
+  text: string,
+  charsPerLine: number,
+  charsPerPage: number
+): string {
+  const charsIntoCurrentPage = text.length % charsPerPage;
+
+  // Already at page start
+  if (charsIntoCurrentPage === 0) return text;
+
+  const charsRemainingOnPage = charsPerPage - charsIntoCurrentPage;
+
+  // How many full lines of padding can we add
+  const fullLines = Math.floor(charsRemainingOnPage / charsPerLine);
+  const remainingChars = charsRemainingOnPage % charsPerLine;
+
+  let padding = "";
+
+  // Each full line = (charsPerLine - 1) spaces + '\n' (1 char) = charsPerLine chars
+  for (let i = 0; i < fullLines; i++) {
+    padding += " ".repeat(charsPerLine - 1) + "\n";
+  }
+
+  // If there are leftover chars, fill them with spaces + newline
+  // so that the total added chars == charsRemainingOnPage
+  if (remainingChars > 0) {
+    if (remainingChars === 1) {
+      // We only need 1 char: a newline is enough
+      padding += "\n";
+    } else {
+      padding += " ".repeat(remainingChars - 1) + "\n";
+    }
+  }
+
+  return text + padding;
+}
+
+export function createContinuousText(
+  book: any,
+  config: LayoutConfig
+): {
+  text: string;
+  chapterPositions: Array<{ startIdx: number; chapterId: string; title: string }>;
+} {
+  let text = "";
+  const chapterPositions: Array<{ startIdx: number; chapterId: string; title: string }> = [];
+
+  // Calculate page dimensions
+  const contentHeight = config.screenHeight - config.marginTop - config.marginBottom;
+  const lineHeightPx = config.fontSize * config.lineHeight;
+  const linesPerPage = Math.floor(contentHeight / lineHeightPx);
+
+  // Rough estimate of chars per line
+  const charsPerLine = Math.floor(config.screenWidth / (config.fontSize * 0.6));
+  const charsPerPage = charsPerLine * linesPerPage;
+
+  book.chapters.forEach((chapter: any, index: number) => {
+    // For chapters after the first, move to the start of a new page
+    if (index > 0) {
+      text = padToNextPageBoundary(text, charsPerLine, charsPerPage);
+    }
+
+    const startIdx = text.length;
+
+    chapterPositions.push({
+      startIdx,
+      chapterId: chapter.id,
+      title: chapter.title,
+    });
+
+    // Add chapter title (starting at top of page)
+    text += chapter.title + "\n\n";
+
+    // Ensure the title is on its own page:
+    // fill the rest of this page so paragraphs start on the next page
+    text = padToNextPageBoundary(text, charsPerLine, charsPerPage);
+
+    // Add all paragraphs with spacing
+    chapter.paragraphs.forEach((para: string) => {
+      text += para + "\n\n";
+    });
+  });
+
+  return { text, chapterPositions };
+}
+
+
+
+
+/*
+export function createContinuousText(
+    book: any,
+    config: LayoutConfig
+  ): {
+    text: string;
+    chapterPositions: Array<{ startIdx: number; chapterId:
+  string; title: string }>
+  } {
+    let text = '';
+    const chapterPositions: Array<{ startIdx: number;
+  chapterId: string; title: string }> = [];
+
+    // Calculate page dimensions
+    const contentHeight = config.screenHeight -
+  config.marginTop - config.marginBottom;
+    const lineHeightPx = config.fontSize *
+  config.lineHeight;
+    const linesPerPage = Math.floor(contentHeight /
+  lineHeightPx);
+    const charsPerLine = Math.floor(config.screenWidth /
+  (config.fontSize * 0.6));
+    const charsPerPage = charsPerLine * linesPerPage;
+
+    book.chapters.forEach((chapter: any) => {
+      const startIdx = text.length;
+
+      chapterPositions.push({
+        startIdx,
+        chapterId: chapter.id,
+        title: chapter.title,
+      });
+
+      // For chapters after the first, add page break
+      //if (startIdx !== 0) {
+        // Calculate how many characters into the current page we are
+        const charsIntoCurrentPage = text.length %
+  charsPerPage;
+
+        // If we're not at the start of a page, fill the rest of the page
+        if (charsIntoCurrentPage > 0) {
+          const charsRemainingOnPage = charsPerPage -
+  charsIntoCurrentPage;
+          const linesRemaining =
+  Math.ceil(charsRemainingOnPage / charsPerLine);
+          text += '\n'.repeat(linesRemaining);
+        }
+      //}
+
+      // Add chapter title on its own page
+      text += `\n\n${chapter.title}\n\n`;
+
+      // Fill rest of page after title
+      const titleLength = chapter.title.length + 4; // +4 for the \n\n before and after
+      const charsAfterTitle = titleLength % charsPerPage;
+      if (charsAfterTitle > 0) {
+        const charsRemaining = charsPerPage -
+  charsAfterTitle;
+        const linesRemaining = Math.ceil(charsRemaining /
+  charsPerLine);
+        text += '\n'.repeat(linesRemaining);
+      }
+
+      // Add all paragraphs with spacing
+      chapter.paragraphs.forEach((para: string) => {
+        text += para + '\n\n';
+      });
+    });
+
+    return { text, chapterPositions };
+  }
+*/
+
+  /*export function createContinuousText(
+    book: any,
+    config: LayoutConfig
+  ): {
+    text: string;
+    chapterPositions: Array<{ startIdx: number; chapterId:
+  string; title: string }>
+  } {
+    let text = '';
+    const chapterPositions: Array<{ startIdx: number;
+  chapterId: string; title: string }> = [];
+
+    // Calculate newlines needed to fill a page
+    const contentHeight = config.screenHeight -
+  config.marginTop - config.marginBottom;
+    const lineHeightPx = config.fontSize * config.lineHeight;
+    const linesPerPage = Math.floor(contentHeight /
+  lineHeightPx);
+    const pageBreak = '\n'.repeat(linesPerPage);
+
+    book.chapters.forEach((chapter: any) => {
+
+      if (text.length !== 0) {
+        text += pageBreak + '\n';
+      }
+
+      chapterPositions.push({
+        startIdx: text.length,
+        chapterId: chapter.id,
+        title: chapter.title,
+      });
+
+      // Add chapter title on its own page
+      text += `\n\n${chapter.title}${pageBreak}`;
+
+      // Add all paragraphs with spacing
+      chapter.paragraphs.forEach((para: string) => {
+        text += '\t' + para + '\n';
+      });
+    });
+
+    return { text, chapterPositions };
+  }
+  */
+
+
+
   /**
    * Flatten book into continuous text with chapter markers
    */
+  /*
   export function createContinuousText(book: any): {
     text: string;
     chapterPositions: Array<{ startIdx: number; chapterId: string; title: string }>
@@ -67,6 +277,11 @@
 
     return { text, chapterPositions };
   }
+  */
+
+
+  
+
 
   /**
    * Find which chapter a character position belongs to
@@ -102,12 +317,15 @@
     measureContent?: (text: string) => Promise<number>
   ): Promise<BookLayout> {
 
-    // Step 1: Create continuous text
-    const { text: fullText, chapterPositions } = createContinuousText(book);
 
-    // Step 2: Calculate content height
-    const contentHeight = config.screenHeight - config.marginTop - config.marginBottom;
+     // Calculate content height first
+    const contentHeight = config.screenHeight -
+  config.marginTop - config.marginBottom;
+    const configWithHeight = { ...config, contentHeight };
 
+    // Pass config to createContinuousText
+    const { text: fullText, chapterPositions } = createContinuousText(book, configWithHeight);
+    
     // Step 3: Estimate characters per page
     const charsPerPage = estimateCharsPerPage({
       ...config,

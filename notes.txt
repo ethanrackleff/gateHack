@@ -1,0 +1,6 @@
+1) Option A
+2) skip summary generation
+3) minimum 3-4 sentences and don't go over a page. Use the estimateCharsPerPage function in pagination.ts to determine how long to make the summary.
+4) we don't want to cache the result. It should be in variable for example currentSummary. It should return a string of the current summary.
+5) The first character of the current page (page.startCharIndex)
+6) it should show an error message instead of the summary.
