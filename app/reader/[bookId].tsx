@@ -1,4 +1,7 @@
 import ControlOverlay from '@/components/control-overlay';
+import { Reader } from "@epubjs-react-native/core";
+import { useFileSystem } from "@epubjs-react-native/expo-file-system";
+import { useReader } from "@epubjs-react-native/core";
 import Footer from '@/components/footer';
 import GenericPopup from '@/components/generic-popup';
 import OptionsMenu from '@/components/options-menu';
@@ -21,7 +24,6 @@ import { getReadingState, saveReadingState } from '@/src/services/storage';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ReaderProvider } from "@epubjs-react-native/core";
-import EpubReaderScreen from "@/components/EpubReaderScreen";
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
   const { width, height } = Dimensions.get('window');
 
@@ -37,9 +39,22 @@ import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
     const [isMenuVisible, setIsMenuVisible] = useState(false);
     const [isSummaryVisible, setIsSummaryVisible] = useState(true);
 
+    const [stateLocation, setStateLocation] = useState<Location>();
+
     const [currentSummary, setCurrentSummary] = useState<string>('');
     const [isLoadingSummary, setIsLoadingSummary] = useState(false);
 
+
+    const { goPrevious, goNext, flow, currentLocation, goToLocation } = useReader();
+
+    useEffect(() => {
+      if (currentLocation) {
+        setStateLocation(currentLocation);
+        // e.g. currentLocatidn.start.cfi, currentLocation.start.location, etc.
+        // console.log("location via hook:", currentLocation);
+      }
+    }, [currentLocation]);
+  
     // Generate layout when book loads or settings change
     useEffect(() => {
       if (!book) return;
@@ -199,6 +214,10 @@ import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
     function decreaseFontSize() {
       setFontSize(Math.max(12, fontSize - 2))
     }
+
+    function handleLocationChange(loc: any) {
+      setStateLocation(loc)
+    }
    
 
     return (
@@ -227,12 +246,27 @@ import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
         <TopBar pageNumber={currentPageNum} totalPages={bookLayout.pages.length}/>
 
         <View style={styles.epubContainer}>
-          <EpubReaderScreen />
+          <Reader
+            src="https://github.com/IDPF/epub3-samples/releases/download/20230704/accessible_epub_3.epub"
+            width={width}
+            height={height}
+            flow="paginated"
+            fileSystem={useFileSystem}      // ✅ pass the hook, don’t call it
+            enableSwipe={false}
+            waitForLocationsReady
+            onReady={() => {
+              console.log("Book loaded");
+            }}
+            onDisplayError={(error: unknown) => {
+              console.log("Reader error", error);
+            }}
+            onLocationChange={handleLocationChange}
+          />
         </View>
 
         <Footer/>
 
-        <ControlOverlay activateMenu={() => setIsMenuVisible(true)}/>
+        <ControlOverlay activateMenu={() => setIsMenuVisible(true)} goPrevious={goPrevious} goNext={goNext} flow={flow}/>
 
       </View>
     );
