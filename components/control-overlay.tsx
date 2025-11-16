@@ -3,13 +3,13 @@ import { StyleSheet, Text, View, Pressable } from "react-native"
 export type ControlOverlayProps = {
   goPrevPage: any,
   goNextPage: any,
-  goBack: any
+  activateMenu: any
 }
 
 export default function ControlOverlay({
   goPrevPage,
   goNextPage,
-  goBack
+  activateMenu
 }: ControlOverlayProps) {
 
   const styles = StyleSheet.create({
@@ -42,7 +42,7 @@ export default function ControlOverlay({
 
   return (
     <View style={styles.mainContainer} pointerEvents="box-none">
-      <Pressable style={styles.topArea} onPress={goBack}></Pressable>
+      <Pressable style={styles.topArea} onPress={activateMenu}></Pressable>
       <View style={styles.midArea}>
         <Pressable style={styles.leftArea} onPress={goPrevPage}></Pressable>
         <Pressable style={styles.rightArea} onPress={goNextPage}></Pressable>

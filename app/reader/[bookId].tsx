@@ -1,5 +1,7 @@
- import ControlOverlay from '@/components/control-overlay';
+import ControlOverlay from '@/components/control-overlay';
 import Footer from '@/components/footer';
+import GenericPopup from '@/components/generic-popup';
+import OptionsMenu from '@/components/options-menu';
 import ReadingArea from '@/components/reading-area';
 import TopBar from '@/components/top-bar';
 import { getBookById } from '@/src/data/booksIndex';
@@ -25,6 +27,7 @@ import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
     const [fontSize, setFontSize] = useState(16);
     const [lineHeight] = useState(1.5);
     const [isLoading, setIsLoading] = useState(true);
+    const [isMenuVisible, setIsMenuVisible] = useState(false);
 
     // Generate layout when book loads or settings change
     useEffect(() => {
@@ -91,9 +94,17 @@ import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
     function decreaseFontSize() {
       setFontSize(Math.max(12, fontSize - 2))
     }
+   
 
     return (
       <View style={styles.container}>
+
+        <GenericPopup 
+          visible={isMenuVisible} 
+          onRequestClose={() => {setIsMenuVisible(false)}}
+        >
+          <OptionsMenu goBack={goBack} currentPageNum={currentPageNum} setCurrentPageNum={setCurrentPageNum} totalPages={bookLayout.pages.length}/>
+        </GenericPopup>
 
         <TopBar pageNumber={currentPageNum} totalPages={bookLayout.pages.length}/>
 
@@ -101,7 +112,7 @@ import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 
         <Footer/>
 
-        <ControlOverlay goPrevPage={goPrevPage} goNextPage={goNextPage} goBack={goBack}/>
+        <ControlOverlay goPrevPage={goPrevPage} goNextPage={goNextPage} activateMenu={() => setIsMenuVisible(true)}/>
 
       </View>
     );
