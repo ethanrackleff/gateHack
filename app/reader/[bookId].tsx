@@ -33,10 +33,15 @@ export default function ReaderScreen() {
   const [currentSummary, setCurrentSummary] = useState<string>("");
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
 
-  const { goPrevious, goNext, currentLocation, goToLocation, totalLocations } =
+  const { goPrevious, changeFontSize, goNext, currentLocation, goToLocation, totalLocations } =
     useReader();
 
   const path = "../../epub_tools/alice_locations.json";
+
+  useEffect(() => {
+    changeFontSize("30px");
+    
+  }, [isReady])
 
   // Generate summary when book layout is ready
   useEffect(() => {
@@ -194,7 +199,8 @@ export default function ReaderScreen() {
       <View style={styles.epubContainer}>
         <Reader
           // src="https://github.com/IDPF/epub3-samples/releases/download/20230704/accessible_epub_3.epub"
-          src="https://github.com/ethanrackleff/gateHack/raw/refs/heads/main/epub_tools/Alice-In-Wonderland.epub"
+          //src="https://github.com/ethanrackleff/gateHack/raw/refs/heads/main/epub_tools/Alice-In-Wonderland.epub"
+          src="https://raw.githubusercontent.com/ethanrackleff/gateHack/main/epub_tools/alice-images-font.epub"
           width={width}
           height={height}
           flow="paginated"

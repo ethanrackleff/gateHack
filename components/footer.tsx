@@ -48,12 +48,13 @@ export default function Footer({
 
   const styles = StyleSheet.create({
     container: {
-      height: "10%",
+      height: "15%",
       backgroundColor: '#9b9',
     },
     image: {
       height: "100%",
-      width: "100%"
+      width: "100%",
+      resizeMode: "contain"
     }
   });
 
@@ -61,7 +62,7 @@ export default function Footer({
 
   return (
     <View style={styles.container}>
-      <Image style={styles.image} resizeMode="stretch" source={bgs[imageIndex]} />
+      <Image style={styles.image} source={bgs[imageIndex]} />
     </View>
   );
 
