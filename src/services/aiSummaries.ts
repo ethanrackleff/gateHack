@@ -98,6 +98,25 @@ import { BookLayout, Page } from './pagination';
     return charPosition;
    }
 
+   export async function getSummary(path: string, location: number): Promise<string | null> {
+    if (location < 5) {
+      return 'No Summary available, you are at the beginning of the book.'; 
+    }
+    let promptText = '';
+
+    let locationsJson = require("../../epub_tools/alice_locations.json");
+
+    let locationList = locationsJson.locations;
+
+    for (let i = location - 5; i <= location; i++) {
+      promptText = promptText + locationList[i].text;
+    }
+
+    const summary = await callOpenAI(promptText, 1000);
+
+    return summary;
+   }
+
   /**
    * Generate a summary of the text from previous chapter to current reading position
    * @param book - The book object
