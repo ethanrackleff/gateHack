@@ -1,4 +1,10 @@
- import { getBookById } from '@/src/data/booksIndex';
+import ControlOverlay from '@/components/control-overlay';
+import Footer from '@/components/footer';
+import GenericPopup from '@/components/generic-popup';
+import OptionsMenu from '@/components/options-menu';
+import ReadingArea from '@/components/reading-area';
+import TopBar from '@/components/top-bar';
+import { getBookById } from '@/src/data/booksIndex';
 import {
   calculateMaxSummaryLength,
   generateSummaryForCurrentPosition
@@ -25,6 +31,7 @@ import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
     const [fontSize, setFontSize] = useState(16);
     const [lineHeight] = useState(1.5);
     const [isLoading, setIsLoading] = useState(true);
+    const [isMenuVisible, setIsMenuVisible] = useState(false);
 
     const [currentSummary, setCurrentSummary] = useState<string>('');
     const [isLoadingSummary, setIsLoadingSummary] = useState(false);
@@ -159,68 +166,47 @@ import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
     const currentPage = getPageByNumber(bookLayout, currentPageNum);
     const pageText = getPageText(bookLayout, currentPageNum);
 
+
+    function goPrevPage() {
+      setCurrentPageNum(Math.max(1, currentPageNum - 1))
+    }
+
+    function goNextPage() {
+      if (!bookLayout) return
+      setCurrentPageNum(Math.min(bookLayout.pages.length, currentPageNum + 1))
+    }
+
+    function goBack() {
+      router.back()
+    }
+
+    function increaseFontSize() {
+      setFontSize(Math.min(24, fontSize + 2))
+    }
+
+    function decreaseFontSize() {
+      setFontSize(Math.max(12, fontSize - 2))
+    }
+   
+
     return (
       <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()}>
-            <Text style={styles.backButton}>← Back</Text>
-          </Pressable>
-          <Text style={styles.chapterTitle}>{currentPage?.chapterTitle}</Text>
-        </View>
 
-        {/* Reading Area */}
-        <View style={styles.contentArea}>
-          <Text style={[styles.content, { fontSize, lineHeight: fontSize * lineHeight }]}>
-            {pageText}
-          </Text>
-        </View>
+        <GenericPopup 
+          visible={isMenuVisible} 
+          onRequestClose={() => {setIsMenuVisible(false)}}
+        >
+          <OptionsMenu goBack={goBack} currentPageNum={currentPageNum} setCurrentPageNum={setCurrentPageNum} totalPages={bookLayout.pages.length}/>
+        </GenericPopup>
 
-        {/* Footer Controls */}
-        <View style={styles.footer}>
-          <Pressable
-            style={styles.navButton}
-            onPress={() => setCurrentPageNum(Math.max(1, currentPageNum - 1))}
-            disabled={currentPageNum === 1}
-          >
-            <Text style={[styles.navButtonText, currentPageNum === 1 && styles.disabled]}>
-              Previous
-            </Text>
-          </Pressable>
+        <TopBar pageNumber={currentPageNum} totalPages={bookLayout.pages.length}/>
 
-          <Text style={styles.pageNumber}>
-            Page {currentPageNum} / {bookLayout.pages.length}
-          </Text>
+        <ReadingArea pageText={pageText} fontSize={fontSize} lineHeight={lineHeight}/>
 
-          <Pressable
-            style={styles.navButton}
-            onPress={() => setCurrentPageNum(Math.min(bookLayout.pages.length, currentPageNum +
-   1))}
-            disabled={currentPageNum === bookLayout.pages.length}
-          >
-            <Text style={[styles.navButtonText, currentPageNum === bookLayout.pages.length && 
-  styles.disabled]}>
-              Next
-            </Text>
-          </Pressable>
-        </View>
+        <Footer/>
 
-        {/* Font Size Controls */}
-        <View style={styles.controls}>
-          <Text style={styles.controlLabel}>Font: {fontSize}px</Text>
-          <Pressable 
-            style={styles.controlButton}
-            onPress={() => setFontSize(Math.max(12, fontSize - 2))}
-          >
-            <Text style={styles.controlButtonText}>A-</Text>
-          </Pressable>
-          <Pressable 
-            style={styles.controlButton}
-            onPress={() => setFontSize(Math.min(24, fontSize + 2))}
-          >
-            <Text style={styles.controlButtonText}>A+</Text>
-          </Pressable>
-        </View>
+        <ControlOverlay goPrevPage={goPrevPage} goNextPage={goNextPage} activateMenu={() => setIsMenuVisible(true)}/>
+
       </View>
     );
   }
@@ -229,74 +215,5 @@ import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
     container: {
       flex: 1,
       backgroundColor: '#fff',
-    },
-    header: {
-      paddingTop: 50,
-      paddingHorizontal: 20,
-      paddingBottom: 10,
-      borderBottomWidth: 1,
-      borderBottomColor: '#e0e0e0',
-    },
-    backButton: {
-      fontSize: 16,
-      color: '#007AFF',
-      marginBottom: 8,
-    },
-    chapterTitle: {
-      fontSize: 14,
-      color: '#666',
-    },
-    contentArea: {
-      flex: 1,
-      paddingHorizontal: 20,
-      paddingVertical: 20,
-      justifyContent: 'flex-start',
-    },
-    content: {
-      textAlign: 'left',
-    },
-    footer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 20,
-      paddingVertical: 15,
-      borderTopWidth: 1,
-      borderTopColor: '#e0e0e0',
-    },
-    navButton: {
-      padding: 10,
-    },
-    navButtonText: {
-      fontSize: 16,
-      color: '#007AFF',
-    },
-    disabled: {
-      color: '#ccc',
-    },
-    pageNumber: {
-      fontSize: 14,
-      color: '#666',
-    },
-    controls: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      alignItems: 'center',
-      gap: 15,
-      paddingBottom: 20,
-    },
-    controlLabel: {
-      fontSize: 14,
-      color: '#666',
-    },
-    controlButton: {
-      paddingHorizontal: 15,
-      paddingVertical: 8,
-      backgroundColor: '#f0f0f0',
-      borderRadius: 6,
-    },
-    controlButtonText: {
-      fontSize: 18,
-      color: '#007AFF',
     },
   });
